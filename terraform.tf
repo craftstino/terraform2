@@ -1,50 +1,15 @@
+/*
+
+
 provider "aws" {
   region = "eu-west-1"
 }
 
-/*
-resource "aws_security_group" "terraformgroup" {
-  name        = "terraformgroup"
-  description = "Allow TLS inbound traffic"
-  vpc_id      = aws_vpc.terraform.id
-
-  ingress {
-    description      = "https"
-    from_port        = 443
-    to_port          = 443
-    protocol         = "tcp"
-    cidr_blocks      = [aws_vpc.terraform.cidr_block]
-  }
-    ingress {
-    description      = "http"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = [aws_vpc.terraform.cidr_block]
-  }
-    ingress {
-    description      = "ssh"
-    from_port        = 22
-    to_port          = 22
-    protocol         = "tcp"
-    cidr_blocks      = [aws_vpc.terraform.cidr_block]
-  }
-
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "terraformgroup"
-  }
-}
-
-
-*/
-
+//
+//
+//networking
+//
+//
 
 
 resource "aws_vpc" "terraformvpc" {
@@ -79,10 +44,23 @@ resource "aws_subnet" "terraformprivate1" {
   
   cidr_block = "192.168.1.0/24"
   
-  availability_zone = "eu-west-1b"
+  availability_zone = "eu-west-1a"
   
   tags = {
     Name = "terraformprivate1"
+  }
+}
+
+resource "aws_subnet" "terraformprivate2" {
+
+  vpc_id = aws_vpc.terraformvpc.id
+  
+  cidr_block = "192.168.2.0/24"
+  
+  availability_zone = "eu-west-1b"
+  
+  tags = {
+    Name = "terraformprivate2"
   }
 }
 
@@ -116,71 +94,50 @@ resource "aws_route_table_association" "terraformassociation" {
   route_table_id = aws_route_table.terraformpubroute.id
 }
 
-resource "aws_security_group" "WS-SG" {
 
-  description = "HTTP, PING, SSH"
+resource "aws_route_table" "terraformprivateroute" {
+    vpc_id = aws_vpc.terraformvpc.id
 
-  name = "webserver-sg"
+  #route {
+  #  cidr_block = "0.0.0.0/0"
+  # gateway_id = aws_internet_gateway.terraformgateway.id
+  #}
 
-  vpc_id = aws_vpc.terraformvpc.id
-
-  ingress {
-    description = "HTTP for webserver"
-    from_port   = 80
-    to_port     = 80
-
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Ping"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "ICMP"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "output from webserver"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+  tags = {
+    Name = "terraformpubroute"
   }
 }
 
-resource "aws_security_group" "MySQL-SG" {
+resource "aws_route_table_association" "terraformassociationpriv1" {
 
-  description = "MySQL Access only from the Webserver Instances!"
-  name = "mysql-sg"
-  vpc_id = aws_vpc.terraformvpc.id
+  subnet_id = aws_subnet.terraformprivate1.id
 
-  ingress {
-    description = "MySQL Access"
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    security_groups = [aws_security_group.WS-SG.id]
-  }
-
-  egress {
-    description = "output from MySQL"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  route_table_id = aws_route_table.terraformprivateroute.id
 }
+
+resource "aws_route_table_association" "terraformassociationpriv2" {
+
+  subnet_id = aws_subnet.terraformprivate2.id
+
+  route_table_id = aws_route_table.terraformprivateroute.id
+}
+
+
+
+
+
+
+
+
+
+//
+//
+//security groups 
+//
+//
+
+
+
 
 resource "aws_security_group" "BH-SG" {
 
@@ -194,6 +151,40 @@ resource "aws_security_group" "BH-SG" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+    ingress {
+    description = "Ping"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "ICMP"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+    ingress {
+    description = "HTTP for webserver"
+    from_port   = 80
+    to_port     = 80
+
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+    ingress {
+    description      = "https"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+    ingress {
+    description = "MySQL Access"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    #security_groups = [aws_security_group.WS-SG.id]
+  }
   
 
   egress {
@@ -205,34 +196,117 @@ resource "aws_security_group" "BH-SG" {
   }
 }
 
-resource "aws_security_group" "DB-SG-SSH" {
 
-  description = "MySQL Bastion host access for updates!"
-  name = "mysql-sg-bastion-host"
-  vpc_id = aws_vpc.terraformvpc.id
 
-  ingress {
-    description = "Bastion Host SG"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    security_groups = [aws_security_group.BH-SG.id]
-  }
 
-  egress {
-    description = "output from MySQL BH"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+//
+//
+//buckets
+//
+//
+
+
+
+
+resource "aws_s3_bucket" "terraformbucket" {
+  bucket = "terraformbucketstijnc"
+
+  tags = {
+    Name        = "terraformbucketstijnc"
   }
 }
-/*
+
+resource "aws_s3_bucket_acl" "terraformbucetacl" {
+  bucket = aws_s3_bucket.terraformbucket.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_versioning" "terraformversioning" {
+  bucket = aws_s3_bucket.terraformbucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_object" "addremove" {
+  bucket = "terraformbucketstijnc"
+  key    = "addremove.php"
+  source = "web-servers/addremove.php"
+  acl = "public-read"
+}
+
+
+resource "aws_s3_object" "connect" {
+  bucket = "terraformbucketstijnc"
+  key    = "connect.php"
+  source = "web-servers/connect.php"
+  acl = "public-read"
+}
+
+resource "aws_s3_object" "createtable" {
+  bucket = "terraformbucketstijnc"
+  key    = "createtable.php"
+  source = "web-servers/createtable.php"
+  acl = "public-read"
+}
+
+resource "aws_s3_object" "list" {
+  bucket = "terraformbucketstijnc"
+  key    = "list.php"
+  source = "web-servers/list.php"
+  acl = "public-read"
+}
+
+resource "aws_s3_object" "eekhoorn" {
+  bucket = "terraformbucketstijnc"
+  key    = "eekhoorn"
+  source = "web-servers/eekhoorn.jpg"
+  acl = "public-read"
+}
+
+resource "aws_s3_object" "indexhtml" {
+  bucket = "terraformbucketstijnc"
+  key    = "index.html"
+  source = "web-servers/index.html"
+  acl = "public-read"
+}
+
+resource "aws_s3_object" "errorhtml" {
+  bucket = "terraformbucketstijnc"
+  key    = "error.html"
+  source = "web-servers/error.html"
+  acl = "public-read"
+}
+
+resource "aws_s3_bucket_website_configuration" "terraformstaticwebsite" {
+  bucket = aws_s3_bucket.terraformbucket.bucket
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "error.html"
+  }
+}
+
+
+
+
+//
+//
+//instances
+//
+//
+
+
+
 resource "aws_instance" "terraformbastionserver" {
   
-  ami = "ami-01cae1550c0adea9c"
+  ami = "ami-096800910c1b781ba"
   instance_type = "t2.micro"
   subnet_id = aws_subnet.terraformpublic1.id
+  availability_zone = "eu-west-1a"
 
   key_name = "stijn2"
 
@@ -240,9 +314,27 @@ resource "aws_instance" "terraformbastionserver" {
   tags = {
    Name = "terraformbastionserver"
   }
-}
-*/
 
+  user_data = <<EOF
+#!/bin/bash
+apt-get update -y
+apt install apache2 -y
+apt install awscli -y
+apt install php8.1 -y
+touch /var/www/html/info.html 
+curl http://checkip.amazonaws.com >> /var/www/html/info.html
+echo " " >> /var/www/html/info.html
+hostname >> /var/www/html/info.html
+cd /var/www/html
+sudo wget https://terraformbucketstijnc.s3.eu-west-1.amazonaws.com/connect.php
+sudo wget https://terraformbucketstijnc.s3.eu-west-1.amazonaws.com/addremove.php
+sudo wget https://terraformbucketstijnc.s3.eu-west-1.amazonaws.com/createtable.php
+sudo wget https://terraformbucketstijnc.s3.eu-west-1.amazonaws.com/list.php
+sudo mv index.html.1 index.html
+EOF
+}
+
+/*
 resource "aws_launch_template" "terraformtemp" {
   name = "terraformtemp"
    
@@ -250,7 +342,7 @@ resource "aws_launch_template" "terraformtemp" {
   #disable_api_termination = true
   instance_type = "t2.micro"
   
-  image_id = "ami-01cae1550c0adea9c"
+  image_id = "ami-096800910c1b781ba"
 
   network_interfaces {
     subnet_id = aws_subnet.terraformpublic1.id
@@ -329,85 +421,30 @@ resource "aws_autoscaling_policy" "terraformpolicylower" {
   cooldown = 300
 }
 
+*/
+
+
+
+
+
+#nu maken we database 
 /*
-
-//nu maken we bucket aan hier 
-resource "aws_s3_bucket" "terraformbucket" {
-  bucket = "terraformbucketstijnc"
-
-  tags = {
-    Name        = "terraformbucketstijnc"
-  }
+resource "aws_db_instance" "terraformrds" {
+  identifier = "terraformdatabase"
+  allocated_storage    = 10
+  db_name              = "CloudComputing"
+  engine               = "mysql"
+  engine_version       = "8.0.28"
+  instance_class       = "db.t2.micro"
+  username             = "stijn"
+  password             = "stijn123!"
+  skip_final_snapshot  = true
+  db_subnet_group_name = aws_db_subnet_group.terraformrdssubnet.id
 }
 
-resource "aws_s3_bucket_acl" "terraformbucetacl" {
-  bucket = aws_s3_bucket.terraformbucket.id
-  acl    = "private"
-}
-
-resource "aws_s3_bucket_versioning" "terraformversioning" {
-  bucket = aws_s3_bucket.terraformbucket.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_object" "addremove" {
-  bucket = "terraformbucketstijnc"
-  key    = "addremove.php"
-  content = "https://raw.githubusercontent.com/dust555/TM_CloudComputing/master/php/addremove.php"
-}
-
-
-resource "aws_s3_object" "connect" {
-  bucket = "terraformbucketstijnc"
-  key    = "connect.php"
-  content = "https://raw.githubusercontent.com/dust555/TM_CloudComputing/master/php/connect.php"
-}
-
-resource "aws_s3_object" "createtable" {
-  bucket = "terraformbucketstijnc"
-  key    = "createtable.php"
-  content = "https://raw.githubusercontent.com/dust555/TM_CloudComputing/master/php/createtable.php"
-}
-
-resource "aws_s3_object" "list" {
-  bucket = "terraformbucketstijnc"
-  key    = "list.php"
-  content = "https://raw.githubusercontent.com/dust555/TM_CloudComputing/master/php/list.php"
-}
-
-resource "aws_s3_object" "eekhoorn" {
-  bucket = "terraformbucketstijnc"
-  key    = "eekhoorn"
-  content = "https://images.pexels.com/photos/47547/squirrel-animal-cute-rodents-47547.jpeg?cs=srgb&dl=pexels-pixabay-47547.jpg&fm=jpg"
-  acl = "public-read"
-}
-
-resource "aws_s3_object" "stijnindexhtml" {
-  bucket = "terraformbucketstijnc"
-  key    = "stijnindex.html"
-  source = "https://raw.githubusercontent.com/craftstino/html/main/stijnindex.html"
-  acl = "public-read"
-}
-
-resource "aws_s3_object" "errorhtml" {
-  bucket = "terraformbucketstijnc"
-  key    = "error.html"
-  source = "https://raw.githubusercontent.com/craftstino/html/main/error.html"
-  acl = "public-read"
-}
-
-resource "aws_s3_bucket_website_configuration" "terraformstaticwebsite" {
-  bucket = aws_s3_bucket.terraformbucket.bucket
-
-  index_document {
-    suffix = "stijnindex.html"
-  }
-
-  error_document {
-    key = "error.html"
-  }
+resource "aws_db_subnet_group" "terraformrdssubnet" {
+  name = "terraformrdssubnet"
+  subnet_ids = [aws_subnet.terraformprivate2.id,aws_subnet.terraformprivate1.id]
 }
 
 */
