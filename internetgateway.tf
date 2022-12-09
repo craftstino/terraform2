@@ -7,3 +7,6 @@ resource "aws_internet_gateway" "terraformgateway" {
     Name = "terraformgateway"
   }
 }
+
+
+#done

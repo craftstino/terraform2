@@ -1,4 +1,4 @@
-/*
+
 
 resource "aws_db_instance" "terraformrds" {
   identifier = "terraformdatabase"
@@ -17,4 +17,5 @@ resource "aws_db_subnet_group" "terraformrdssubnet" {
   name = "terraformrdssubnet"
   subnet_ids = [aws_subnet.terraformprivate2.id,aws_subnet.terraformprivate1.id]
 }
-*/
+
+#done

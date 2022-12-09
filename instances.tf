@@ -63,3 +63,5 @@ resource "aws_instance" "terraformprivatevm" {
     aws_key_pair.TF_key,tls_private_key.rsa,local_file.TF-key
   ]
 }
+
+#done

@@ -9,3 +9,4 @@ resource "aws_nat_gateway" "nat_gateway" {
   subnet_id = aws_subnet.terraformpublic1.id
 }
 
+#done
