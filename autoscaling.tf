@@ -1,4 +1,4 @@
-/*
+
 resource "aws_launch_template" "terraformtemp" {
   name = "terraformtemp"
    
@@ -13,7 +13,11 @@ resource "aws_launch_template" "terraformtemp" {
     security_groups = [aws_security_group.BH-SG.id]
   }
 
-  key_name = "stijn2"
+  key_name = "TF_key"
+
+  depends_on = [
+    aws_key_pair.TF_key,tls_private_key.rsa,local_file.TF-key
+  ]
 
 }
 
@@ -81,9 +85,8 @@ resource "aws_autoscaling_policy" "terraformpolicylower" {
   name = "test1"
   autoscaling_group_name = aws_autoscaling_group.terraformscaling.name
   adjustment_type = "ChangeInCapacity"
-  scaling_adjustment = "1"
+  scaling_adjustment = "-1"
   cooldown = 300
 }
 
 
-*/

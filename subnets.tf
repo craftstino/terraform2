@@ -1,3 +1,4 @@
+
 resource "aws_subnet" "terraformpublic1" {
   
   vpc_id = aws_vpc.terraformvpc.id

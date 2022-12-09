@@ -1,3 +1,4 @@
+
 resource "aws_route_table" "terraformpubroute" {
 
   vpc_id = aws_vpc.terraformvpc.id
@@ -29,6 +30,7 @@ resource "aws_route_table" "terraformprivateroute" {
 
   tags = {
     Name = "terraformpubroute"
+    
   }
 }
 

@@ -1,10 +1,11 @@
+
 resource "aws_security_group" "BH-SG" {
 
   description = "MySQL Access only from the Webserver Instances!"
   name = "bastion-host-sg"
   vpc_id = aws_vpc.terraformvpc.id
     ingress {
-    description = "Bastion Host SG"
+    description = "Bastion Host Security group"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
