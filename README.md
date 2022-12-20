@@ -1,4 +1,5 @@
 # terraform Stijn Ceulemans
+Stijn Ceulemans r0783874 
 
 I create 1 VPC with 1 public and 2 private subnets. 
 
